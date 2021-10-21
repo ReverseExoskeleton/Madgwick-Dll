@@ -42,6 +42,10 @@
 #include "FusionAhrs.h"
 #include <float.h> // FLT_MAX
 #include <math.h> // atan2f, cosf, sinf
+// --------------------------------------------------------------------------------------------------------
+#include <iostream>
+#include <fstream>
+// --------------------------------------------------------------------------------------------------------
 
 //------------------------------------------------------------------------------
 // Definitions
@@ -108,6 +112,10 @@ void FusionAhrsSetMagneticField(FusionAhrs* const fusionAhrs, const float minimu
  */
 void FusionAhrsUpdate(FusionAhrs* const fusionAhrs, const FusionVector3 gyroscope, const FusionVector3 accelerometer, const FusionVector3 magnetometer, const float samplePeriod) {
 #define Q fusionAhrs->quaternion // define shorthand label for more readable code
+    // --------------------------------------------------------------------------------------------------------
+    std::ofstream ofs("test.txt", std::ofstream::app);
+    ofs << "Start of AhrsUpdate | " << "x:" << Q.x << " y:" << Q.y << " z:" << Q.z << " w:" << Q.w << "\n";
+    // --------------------------------------------------------------------------------------------------------
 
     // Calculate feedback error
     FusionVector3 halfFeedbackError = FUSION_VECTOR3_ZERO(); // scaled by 0.5 to avoid repeated multiplications by 2
@@ -162,10 +170,14 @@ void FusionAhrsUpdate(FusionAhrs* const fusionAhrs, const FusionVector3 gyroscop
     halfGyroscope = FusionVectorAdd(halfGyroscope, FusionVectorMultiplyScalar(halfFeedbackError, feedbackGain));
 
     // Integrate rate of change of quaternion
+    // --------------------------------------------------------------------------------------------------------
     fusionAhrs->quaternion = FusionQuaternionAdd(fusionAhrs->quaternion, FusionQuaternionMultiplyVector(fusionAhrs->quaternion, FusionVectorMultiplyScalar(halfGyroscope, samplePeriod)));
+    ofs << "After integrate | " << "x:" << Q.x << " y:" << Q.y << " z:" << Q.z << " w:" << Q.w << "\n";
 
     // Normalise quaternion
     fusionAhrs->quaternion = FusionQuaternionFastNormalise(fusionAhrs->quaternion);
+    ofs << "After normalize | " << "x:" << Q.x << " y:" << Q.y << " z:" << Q.z << " w:" << Q.w << "\n";
+    // --------------------------------------------------------------------------------------------------------
 
     // Calculate linear acceleration
     const FusionVector3 gravity = {
@@ -175,6 +187,9 @@ void FusionAhrsUpdate(FusionAhrs* const fusionAhrs, const FusionVector3 gyroscop
     }; // equal to 3rd column of rotation matrix representation
     fusionAhrs->linearAcceleration = FusionVectorSubtract(accelerometer, gravity);
 
+    // --------------------------------------------------------------------------------------------------------
+    ofs.close();
+    // --------------------------------------------------------------------------------------------------------
 #undef Q // undefine shorthand label
 }
 
@@ -210,6 +225,13 @@ void FusionAhrsUpdateWithoutMagnetometer(FusionAhrs* const fusionAhrs, const Fus
  * @return Quaternion describing the sensor relative to the Earth.
  */
 FusionQuaternion FusionAhrsGetQuaternion(const FusionAhrs* const fusionAhrs) {
+    // --------------------------------------------------------------------------------------------------------
+    std::ofstream ofs("test.txt", std::ofstream::app);
+    FusionQuaternion Q = FusionQuaternionConjugate(fusionAhrs->quaternion);
+    ofs << "After conjugate | " << "x:" << Q.x << " y:" << Q.y << " z:" << Q.z << " w:" << Q.w << "\n";
+    ofs << "\n\n";
+    ofs.close();
+    // --------------------------------------------------------------------------------------------------------
     return FusionQuaternionConjugate(fusionAhrs->quaternion);
 }
 
